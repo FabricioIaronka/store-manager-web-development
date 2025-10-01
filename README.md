@@ -140,8 +140,200 @@ Os wireframes estão disponíveis na pasta [`/docs/wireframes`](./docs/wireframe
 ---
 
 ### 9.3 Relações entre entidades
-- Um **Usuario** pode realizar muitas **Vendas** (1→N).  
-- Uma **Venda** pertence a um **Usuario** (N→1).  
-- Uma **Venda** pode ter muitos **Produtos** (N→N).  
-- Um **Produto** pode aparecer em muitas **Vendas** (N→N).  
-- A relação **VendaProduto** resolve o N:N entre **Venda** e **Produto**.  
+
+* Um **Usuario** pode realizar muitas **Vendas** (1→N).  
+* Uma **Venda** pertence a um **Usuario** (N→1).  
+* Uma **Venda** pode ser associada a um **Cliente** (1→1, opcional).  
+* Uma **Venda** pode ter muitos **Produtos** (N→N).  
+* Um **Produto** pode aparecer em muitas **Vendas** (N→N).  
+* A relação **ItemVenda** resolve o N→N entre **Venda** e **Produto**.
+
+### 9.4 Modelagem (SQL)
+
+A modelagem completa do banco de dados, incluindo a criação de tabelas, inserção de dados de exemplo e queries de teste, foi implementada e separada para melhor organização.
+
+* **DDL QUERY**
+
+```SQL
+    \-- Criação de Tipos ENUM personalizados  
+CREATE TYPE user\_role AS ENUM ('vendedor', 'gerente');  
+CREATE TYPE payment\_type AS ENUM ('Money', 'Debit', 'Credit', 'PIX', 'Other');
+
+\-- Tabela de Usuários do sistema  
+CREATE TABLE users (  
+    id SERIAL PRIMARY KEY,  
+    name VARCHAR(255) NOT NULL,  
+    email VARCHAR(255) NOT NULL UNIQUE,  
+    password\_hash VARCHAR(255) NOT NULL,  
+    role user\_role NOT NULL,  
+    created\_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT\_TIMESTAMP,  
+    updated\_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT\_TIMESTAMP  
+);
+
+\-- Tabela de Clientes da loja  
+CREATE TABLE clients (  
+    id SERIAL PRIMARY KEY,  
+    name VARCHAR(100) NOT NULL,  
+    surname VARCHAR(100),  
+    cpf VARCHAR(11) UNIQUE,  
+    number VARCHAR(20),  
+    email VARCHAR(255) UNIQUE  
+);
+
+\-- Tabela de Produtos  
+CREATE TABLE products (  
+    id SERIAL PRIMARY KEY,  
+    name VARCHAR(255) NOT NULL,  
+    description TEXT,  
+    price NUMERIC(10, 2\) NOT NULL CHECK(price \>= 0),  
+    quantity INTEGER NOT NULL CHECK(quantity \>= 0),  
+    category VARCHAR(100),  
+    created\_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT\_TIMESTAMP,  
+    updated\_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT\_TIMESTAMP  
+);
+
+\-- Tabela de Vendas  
+CREATE TABLE sales (  
+    id SERIAL PRIMARY KEY,  
+    user\_id INTEGER NOT NULL REFERENCES users(id),  
+    client\_id INTEGER REFERENCES clients(id),  
+    payment\_type payment\_type NOT NULL,  
+    total\_value NUMERIC(10, 2\) NOT NULL,  
+    created\_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT\_TIMESTAMP  
+);
+
+\-- Tabela Associativa para os Itens de uma Venda  
+CREATE TABLE sale\_items (  
+    id SERIAL PRIMARY KEY,  
+    sale\_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,  
+    product\_id INTEGER NOT NULL REFERENCES products(id),  
+    quantity INTEGER NOT NULL,  
+    unit\_price NUMERIC(10, 2\) NOT NULL  
+);  
+```
+
+* **DML QUERY**
+```sql
+    -- Inserir Usurios
+INSERT INTO users (name, email, password_hash, role) VALUES
+('Alice Gerente', 'alice@email.com', '$2y$10$senhahashgerente', 'gerente'),
+('Bruno Vendedor', 'bruno@email.com', '$2y$10$senhahashvaluevendedor', 'vendedor');
+
+-- Inserir Clientes
+INSERT INTO clients (name, surname, cpf, number, email) VALUES
+('Carlos Silva', 'de Souza', '11122233344', '49999887766', 'carlos.silva@email.com'),
+('Diana Costa', 'Pereira', '55566677788', '48888776655', 'diana.costa@email.com'),
+('Eduardo Lima', NULL, NULL, '47777665544', NULL);
+
+-- Inserir Produtos
+INSERT INTO products (name, description, price, quantity, category) VALUES
+('Camiseta Branca', 'Camiseta de algodão Pima, cor branca', 49.90, 50, 'Vestuário'),
+('Calça Jeans Slim', 'Calça jeans masculina com elastano', 119.90, 30, 'Vestuário'),
+('Tênis de Corrida', 'Tênis leve para corrida, marca XPTO', 299.50, 15, 'Calçados'),
+('Boné Preto', 'Boné básico com aba curva', 25.00, 40, 'Acessórios'),
+('Copo Térmico', 'Copo de inox com capacidade para 500ml', 89.90, 8, 'Utilitários');
+
+-- Inserir Venda 1 (feita por Bruno Vendedor para o cliente Carlos Silva)
+INSERT INTO sales (user_id, client_id, payment_type, total_value) VALUES
+(2, 1, 'Credit', 169.90);
+-- Itens da Venda 1
+INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES
+(1, 2, 1, 119.90), -- 1 Calça Jeans
+(1, 4, 2, 25.00);  -- 2 Bonés Pretos
+
+-- Inserir Venda 2 (feita por Bruno Vendedor para o cliente Diana Costa)
+INSERT INTO sales (user_id, client_id, payment_type, total_value) VALUES
+(2, 2, 'PIX', 299.50);
+-- Itens da Venda 2
+INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES
+(2, 3, 1, 299.50); -- 1 Tênis de Corrida
+
+-- Inserir Venda 3 (feita por Alice Gerente, sem cliente identificado)
+INSERT INTO sales (user_id, client_id, payment_type, total_value) VALUES
+(1, NULL, 'Debit', 239.60);
+-- Itens da Venda 3
+INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES
+(3, 1, 3, 49.90), -- 3 Camisetas Brancas
+(3, 5, 1, 89.90); -- 1 Copo Térmico
+
+```
+
+* **DQL QUERY**
+
+```sql
+-- Query 1: Listar todos os produtos com baixo estoque (quantidade menor que 10)
+SELECT
+    id,
+    name,
+    quantity,
+    category
+FROM
+    products
+WHERE
+    quantity < 10
+ORDER BY
+    quantity ASC;
+
+-- Query 2: Calcular o total de vendas agrupado por dia
+SELECT
+    DATE(created_at) AS dia,
+    SUM(total_value) AS faturamento_total,
+    COUNT(id) AS numero_de_vendas
+FROM
+    sales
+GROUP BY
+    DATE(created_at)
+ORDER BY
+    dia DESC;
+
+
+-- Query 3: Listar os 5 produtos mais vendidos (em quantidade)
+SELECT
+    p.id,
+    p.name,
+    SUM(si.quantity) AS total_vendido
+FROM
+    sale_items si
+JOIN
+    products p ON si.product_id = p.id
+GROUP BY
+    p.id, p.name
+ORDER BY
+    total_vendido DESC
+LIMIT 5;
+
+
+-- Query 4: Detalhar uma venda específica (ex: venda com id = 1)
+SELECT
+    s.id AS venda_id,
+    s.created_at AS data_venda,
+    p.name AS produto,
+    si.quantity AS quantidade,
+    si.unit_price AS preco_unitario,
+    (si.quantity * si.unit_price) AS subtotal
+FROM
+    sales s
+JOIN
+    sale_items si ON s.id = si.sale_id
+JOIN
+    products p ON si.product_id = p.id
+WHERE
+    s.id = 1;
+
+
+-- Query 5: Listar todas as vendas realizadas por um vendedor específico (ex: user com id = 2)
+SELECT
+    s.id AS venda_id,
+    s.total_value AS valor_total,
+    s.created_at AS data_venda,
+    c.name AS nome_cliente
+FROM
+    sales s
+LEFT JOIN
+    clients c ON s.client_id = c.id
+WHERE
+    s.user_id = 2
+ORDER BY
+    s.created_at DESC;
+
+```
