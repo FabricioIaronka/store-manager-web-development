@@ -9,11 +9,14 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_DATABASE")
+DB_NAME = os.getenv("DB_NAME")
 
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-)
+var = [DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME]
+
+if not all(var):
+    raise ValueError(f"Uma ou mais variáveis de ambiente do banco de dados não foram definidas. Verifique seu arquivo .env")
+
+SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 

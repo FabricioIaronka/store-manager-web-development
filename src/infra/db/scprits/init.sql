@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS users;
 DROP TYPE IF EXISTS user_role;
 DROP TYPE IF EXISTS payment_type;
 
-CREATE TYPE user_role AS ENUM ('vendedor', 'gerente');
+CREATE TYPE user_role AS ENUM ('seller', 'stock_manager', 'admin');
 
 CREATE TYPE payment_type AS ENUM ('Money', 'Debit', 'Credit', 'PIX', 'Other');
 
