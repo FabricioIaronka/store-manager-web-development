@@ -10,7 +10,6 @@ class User:
     id: Optional[int]
     name: str
     email: str
-    password: str
     role: UserRole
 
     created_at: Optional[datetime] = None

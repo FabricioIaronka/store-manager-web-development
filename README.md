@@ -337,3 +337,80 @@ ORDER BY
     s.created_at DESC;
 
 ```
+
+### **9.5\. Dados de Teste e Endpoints da API**
+
+### **Tabela de Endpoints**
+
+#### **Users**
+
+| Método | Rota | Corpo (JSON) | Resposta de Sucesso |
+| :---- | :---- | :---- | :---- |
+| POST | /users/ | { "name": "string", "email": "user@example.com", "password": "a\_strong\_password", "role": "seller" } | 201 Created \- Objeto do utilizador criado |
+| GET | /users/ | N/A | 200 OK \- Lista de todos os utilizadores |
+| GET | /users/{id} | N/A | 200 OK \- Objeto do utilizador encontrado |
+| GET | /users/email/{email} | N/A | 200 OK \- Objeto do utilizador encontrado |
+| PUT | /users/{id} | { "name": "new name", "role": "admin" } (campos opcionais) | 200 OK \- Objeto do utilizador atualizado |
+| DELETE | /users/{id} | N/A | 204 No Content |
+
+#### 
+
+## 
+
+## **10\. Tecnologias Necessárias**
+
+* **Python 3.12.3** com **FastAPI**  
+* **PostgreSQL 16**
+
+## **11\. Como Rodar**
+
+### **Passo a Passo**
+
+1. Instalar Dependências:  
+   Certifique-se de que tem um ambiente virtual (.venv) ativado e, de seguida, instale as dependências a partir da raiz do projeto.  
+   pip install \-r requirements.txt
+
+2. Configurar Variáveis de Ambiente:  
+   Copie o ficheiro .env.example para um novo ficheiro chamado .env e preencha com as suas credenciais do banco de dados.  
+   cp .env.example .env
+
+3. Criar e Popular o Banco de Dados:  
+   Certifique-se de que o seu serviço PostgreSQL está a rodar. De seguida, execute os scripts para criar a estrutura (tabelas, tipos, etc.) e popular com dados iniciais.  
+   \# Exemplo de comando \- substitua com o seu utilizador e nome do banco  
+   \# Executa o script para criar as tabelas  
+   psql \-h localhost \-U meu\_usuario\_api \-d vendas\_db \-f src/infra/db/scripts/init.sql
+
+   \# (Opcional) Executa o script para popular com dados  
+   psql \-h localhost \-U meu\_usuario\_api \-d vendas\_db \-f src/infra/db/scripts/dml.sql
+
+### **Comandos de Execução**
+
+* **Modo de Desenvolvimento (com auto-reload):**  
+  uvicorn src.main:app \--reload \--log-level debug
+
+* **Modo de Produção:**  
+  uvicorn src.main:app \--host 0.0.0.0 \--port 8000
+
+### **Porta Padrão**
+
+* **8000**
+
+## **12\. Variáveis de Ambiente**
+
+As seguintes variáveis de ambiente são necessárias para a conexão com o banco de dados. Elas devem ser definidas num ficheiro .env na raiz do projeto.
+
+* DB\_HOST: O endereço do servidor do banco de dados (ex: localhost).  
+* DB\_PORT: A porta do servidor do banco de dados (ex: 5432).  
+* DB\_USER: O nome de utilizador para a conexão.  
+* DB\_PASSWORD: A senha para o utilizador especificado.  
+* DB\_NAME: O nome do banco de dados ao qual se conectar.
+
+#### **.env.example**
+
+DB\_HOST=localhost  
+DB\_PORT=5432  
+DB\_USER=  
+DB\_PASSWORD=  
+DB\_NAME=
+
+#### 
