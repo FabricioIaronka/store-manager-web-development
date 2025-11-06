@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
-from core.entities.user import User
+from ....core.entities.user import User
 
 
 class UserIRep(ABC):
@@ -15,7 +15,7 @@ class UserIRep(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def search_by_id(id: int) -> Optional[User]:
+    def get_by_id(id: int) -> Optional[User]:
         raise NotImplementedError
     
     @abstractmethod
