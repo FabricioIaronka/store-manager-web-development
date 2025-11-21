@@ -12,7 +12,15 @@ class SaleModel(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
 
-    payment_type = Column(SQLAlchemyEnum(PaymentType, name="payment_type", create_type=False), nullable=False)
+    payment_type = Column(
+        SQLAlchemyEnum(
+            PaymentType, 
+            name="payment_type", 
+            create_type=False,
+            values_callable=lambda obj: [e.value for e in obj] 
+        ), 
+        nullable=False
+    )
 
     total_value = Column(Numeric(10, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
