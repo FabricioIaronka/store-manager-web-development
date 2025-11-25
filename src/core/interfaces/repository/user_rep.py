@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -10,6 +10,17 @@ from ....infra.db.models.user_model import UserModel
 class UserRep(UserIRep):
     def __init__(self, session: Session):
         self.session = session
+
+    def _db_to_entity(self, user_db: UserModel) -> Optional[User]:
+        return User(
+                id=user_db.id,
+                name=user_db.name,
+                email=user_db.email,
+                password_hash=user_db.password_hash,
+                role=user_db.role,
+                created_at=user_db.created_at,
+                updated_at=user_db.updated_at
+            )
 
     def create(self, user: User, h_password: str) -> User:
         """
@@ -28,14 +39,7 @@ class UserRep(UserIRep):
             self.session.commit()
             self.session.refresh(user_db)
 
-            return User(
-                id=user_db.id,
-                name=user_db.name,
-                email=user_db.email,
-                role=user_db.role,
-                created_at=user_db.created_at,
-                updated_at=user_db.updated_at
-            )
+            return self._db_to_entity(user_db)
         
         except IntegrityError:
             self.session.rollback()
@@ -59,14 +63,7 @@ class UserRep(UserIRep):
         self.session.commit()
         self.session.refresh(user_db)
 
-        return User(
-            id=user_db.id,
-            name=user_db.name,
-            email=user_db.email,
-            role=user_db.role,
-            created_at=user_db.created_at,
-            updated_at=user_db.updated_at
-        )
+        return self._db_to_entity(user_db)
         
     def delete(self, user_id: int) -> bool:
         """
@@ -87,14 +84,7 @@ class UserRep(UserIRep):
         if not user_db:
             return None
         
-        return User(
-            id=user_db.id,
-            name=user_db.name,
-            email=user_db.email,
-            role=user_db.role,
-            created_at=user_db.created_at,
-            updated_at=user_db.updated_at
-        )
+        return self._db_to_entity(user_db)
     
     def get_by_email(self, email:str) -> User | None:
         user_db = self.session.query(UserModel).filter(UserModel.email == email).first()
@@ -102,14 +92,7 @@ class UserRep(UserIRep):
         if not user_db:
             return None
         
-        return User(
-            id=user_db.id,
-            name=user_db.name,
-            email=user_db.email,
-            role=user_db.role,
-            created_at=user_db.created_at,
-            updated_at=user_db.updated_at
-        )
+        return self._db_to_entity(user_db)
     
     def get_all(self) -> List[User]:
         """"
@@ -119,14 +102,7 @@ class UserRep(UserIRep):
             users_db: List[UserModel] = self.session.query(UserModel).all()
 
             users = [
-                User(
-                    id=usr_db.id,
-                    name=usr_db.name,
-                    email=usr_db.email,
-                    role=usr_db.role,
-                    created_at=usr_db.created_at,
-                    updated_at=usr_db.updated_at
-                )
+                self._db_to_entity(usr_db)
                 for usr_db in users_db
             ]
 

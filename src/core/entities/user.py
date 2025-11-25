@@ -9,6 +9,7 @@ from src.core.entities.user_role import UserRole
 class User:
     id: Optional[int]
     name: str
+    password_hash: str
     email: str
     role: UserRole
 

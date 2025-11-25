@@ -3,7 +3,9 @@ from typing import List
 
 from ...core.use_cases.client_use_cases import ClientUseCase
 from ...core.errors.client_error import ClientNotFoundError, ClientEmailAlreadyExistsError, ClientCPFAlreadyExistsError
+from ...core.entities.user import User
 from ..dependencies.client_dependencies import get_client_use_cases
+from ..dependencies.auth_dependencies import get_current_user
 from ..schemas.client_schema import ClientCreate, ClientResponse, ClientUpdate
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
@@ -11,7 +13,8 @@ router = APIRouter(prefix="/clients", tags=["Clients"])
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 def create_client(
     client_data: ClientCreate,
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         new_client = client_use_cases.create_client(
@@ -30,7 +33,8 @@ def create_client(
 
 @router.get("/", response_model=List[ClientResponse])
 def get_all_clients(
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         clients = client_use_cases.get_all_clients()
@@ -42,7 +46,8 @@ def get_all_clients(
 @router.get("/{client_id}", response_model=ClientResponse)
 def get_client_by_id(
     client_id: int,
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         client = client_use_cases.get_client_by_id(client_id)
@@ -55,7 +60,8 @@ def get_client_by_id(
 @router.get("/cpf/{client_cpf}", response_model=ClientResponse)
 def get_client_by_cpf(
     client_cpf: str,
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         client = client_use_cases.get_client_by_cpf(client_cpf)
@@ -68,7 +74,8 @@ def get_client_by_cpf(
 @router.get("/email/{client_email}", response_model=ClientResponse)
 def get_client_by_email(
     client_email: str,
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         client = client_use_cases.get_client_by_email(client_email)
@@ -83,7 +90,8 @@ def get_client_by_email(
 def update_client(
     client_id: int,
     client_data: ClientUpdate,
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         update_data = client_data.model_dump(exclude_unset=True) 
@@ -103,7 +111,8 @@ def update_client(
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_client(
     client_id: int,
-    client_use_cases: ClientUseCase = Depends(get_client_use_cases)
+    client_use_cases: ClientUseCase = Depends(get_client_use_cases),
+    current_user: User = Depends(get_current_user)
 ):
     try:
         client_use_cases.delete_client(client_id)
