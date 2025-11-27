@@ -5,7 +5,7 @@ from ..dependencies.user_dependencies import get_user_repository
 from ..dependencies.product_dependencies import get_product_repository
 from ..dependencies.client_dependencies import get_client_repository
 
-from ...infra.db.database import get_db_session
+from .auth_dependencies import get_session_with_rls
 from ...core.interfaces.repository.sale_rep import SaleRep
 from ...core.interfaces.repository.sale_i_rep import SaleIRep
 
@@ -16,7 +16,7 @@ from ...core.interfaces.repository.product_i_rep import ProductIRep
 from ...core.interfaces.repository.client_i_rep import ClientIRep
 
 
-def get_sale_repository(db: Session = Depends(get_db_session)) -> SaleIRep:
+def get_sale_repository(db: Session = Depends(get_session_with_rls)) -> SaleIRep:
     return SaleRep(session=db)
 
 def get_sale_use_cases(

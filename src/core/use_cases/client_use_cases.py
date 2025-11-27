@@ -7,7 +7,7 @@ class ClientUseCase:
     def __init__(self, client_rep: ClientIRep):
         self.client_rep = client_rep
 
-    def create_client(self, name: str, surname: Optional[str], cpf: Optional[str], number: Optional[str], email: Optional[str]) -> Client:
+    def create_client(self, store_id: int, name: str, surname: Optional[str], cpf: Optional[str], number: Optional[str], email: Optional[str]) -> Client:
         
         if email and self.client_rep.get_by_email(email):
             raise ClientEmailAlreadyExistsError(email)
@@ -17,6 +17,7 @@ class ClientUseCase:
 
         client = Client(
             id=None,
+            store_id=store_id,
             name=name,
             surname=surname,
             cpf=cpf,

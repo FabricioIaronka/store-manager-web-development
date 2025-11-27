@@ -33,9 +33,10 @@ class SaleRep(SaleIRep):
         
         return Sale(
             id=sale_db.id,
+            store_id=sale_db.store_id,
             user_id=sale_db.user_id,
             client_id=sale_db.client_id,
-            payment_type=PaymentType(sale_db.payment_type.value), # Converte Enum
+            payment_type=PaymentType(sale_db.payment_type.value),
             total_value=float(sale_db.total_value),
             created_at=sale_db.created_at,
             items=sale_items_entities
@@ -48,13 +49,13 @@ class SaleRep(SaleIRep):
         """
         try:
             sale_db = SaleModel(
+                store_id=sale.store_id,
                 user_id=sale.user_id,
                 client_id=sale.client_id,
                 payment_type=sale.payment_type, 
                 total_value=sale.total_value,
                 created_at=datetime.now() 
             )
-            print("REP")
             self.session.add(sale_db)
             self.session.flush() 
 
@@ -87,9 +88,8 @@ class SaleRep(SaleIRep):
                 self.session.add(sale_item_db)
 
             self.session.commit()
-            
             self.session.refresh(sale_db)
-            print("REP")
+            
             return self._db_to_entity(sale_db)
 
         except (IntegrityError, InsufficientStockError, ProductNotFoundError) as e:

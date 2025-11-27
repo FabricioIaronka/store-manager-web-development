@@ -7,7 +7,7 @@ class ProductUseCase:
     def __init__(self, product_rep: ProductIRep):
         self.product_rep = product_rep
 
-    def create_product(self, name: str, description: str, price: float, qnt: int, category: str) -> Product:
+    def create_product(self, store_id: int, name: str, description: str, price: float, qnt: int, category: str) -> Product:
         """ Responsible to validate new product and call ProductRep """
 
         if self.product_rep.get_by_name(name):
@@ -15,6 +15,7 @@ class ProductUseCase:
 
         product = Product(
             id=None,
+            store_id=store_id,
             name=name,
             description=description,
             price=price,

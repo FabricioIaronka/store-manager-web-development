@@ -18,6 +18,7 @@ class ClientRep(ClientIRep):
             return None
         return Client(
             id=client_db.id,
+            store_id=client_db.store_id,
             name=client_db.name,
             surname=client_db.surname,
             cpf=client_db.cpf,
@@ -28,6 +29,7 @@ class ClientRep(ClientIRep):
     def create(self, client: Client) -> Client:
         try:
             client_db = ClientModel(
+                store_id=client.store_id,
                 name=client.name,
                 surname=client.surname,
                 cpf=client.cpf,

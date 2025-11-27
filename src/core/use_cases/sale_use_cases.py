@@ -16,8 +16,6 @@ from ..errors.user_error import UserNotFoundError
 from ..errors.client_error import ClientNotFoundError
 
 class SaleUseCase:
-    """Casos de uso para Vendas."""
-    
     def __init__(
         self, 
         sale_rep: SaleIRep,
@@ -31,7 +29,8 @@ class SaleUseCase:
         self.user_rep = user_rep
 
     def create_sale(
-        self, 
+        self,
+        store_id: int,
         user_id: int, 
         payment_type: PaymentType, 
         items: List[Dict[str, Any]], 
@@ -45,7 +44,7 @@ class SaleUseCase:
             raise ClientNotFoundError()
 
         if not items:
-            raise ValueError("A venda deve conter pelo menos um item.")
+            raise ValueError("Sale need at least have one item.")
 
         sale_items_entities = []
         total_value = 0.0
@@ -79,6 +78,7 @@ class SaleUseCase:
 
         sale_entity = Sale(
             id=None,
+            store_id=store_id,
             user_id=user_id,
             client_id=client_id,
             payment_type=payment_type,

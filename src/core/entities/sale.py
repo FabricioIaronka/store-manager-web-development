@@ -8,6 +8,7 @@ from .payment_type import PaymentType
 @dataclass
 class Sale:
     id: Optional[int]
+    store_id: int
     user_id: int
     client_id: int
     created_at: datetime

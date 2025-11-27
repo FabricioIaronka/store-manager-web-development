@@ -1,12 +1,9 @@
-# src/api/routes/product_routes.py
-
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import List
 
 from ...core.use_cases.product_use_cases import ProductUseCase
 from ...core.errors.product_error import ProductNotFoundError, ProductNameAlreadyExistsError
-from ...core.entities.user import User
-from ...api.dependencies.auth_dependencies import get_current_user
+from ...api.dependencies.auth_dependencies import get_active_store_id
 from ..dependencies.product_dependencies import get_product_use_cases
 from ..schemas.product_schema import ProductCreate, ProductResponse, ProductUpdate
 
@@ -16,18 +13,20 @@ router = APIRouter(prefix="/products", tags=["Products"])
 def create_product(
     product_data: ProductCreate,
     product_use_cases: ProductUseCase = Depends(get_product_use_cases),
-    current_user: User = Depends(get_current_user)
+    store_id: int = Depends(get_active_store_id)
 ):
     """ Create new product """
 
     try:
         new_product = product_use_cases.create_product(
+            store_id=store_id,
             name=product_data.name,
             description=product_data.description,
             price=product_data.price,
             qnt=product_data.qnt,
             category=product_data.category
         )
+        print('teste')
         return new_product
     except ProductNameAlreadyExistsError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -37,8 +36,7 @@ def create_product(
 
 @router.get("/", response_model=List[ProductResponse])
 def get_all_products(
-    product_use_cases: ProductUseCase = Depends(get_product_use_cases),
-    current_user: User = Depends(get_current_user)
+    product_use_cases: ProductUseCase = Depends(get_product_use_cases)
 ):
     """ Get all products """
 
@@ -52,8 +50,7 @@ def get_all_products(
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product_by_id(
     product_id: int,
-    product_use_cases: ProductUseCase = Depends(get_product_use_cases),
-    current_user: User = Depends(get_current_user)
+    product_use_cases: ProductUseCase = Depends(get_product_use_cases)
 ):
     """ Get product by id """
 
@@ -70,8 +67,7 @@ def get_product_by_id(
 def update_product(
     product_id: int,
     product_data: ProductUpdate,
-    product_use_cases: ProductUseCase = Depends(get_product_use_cases),
-    current_user: User = Depends(get_current_user)
+    product_use_cases: ProductUseCase = Depends(get_product_use_cases)
 ):
     """ Update product information by id """
     
@@ -93,8 +89,7 @@ def update_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(
     product_id: int,
-    product_use_cases: ProductUseCase = Depends(get_product_use_cases),
-    current_user: User = Depends(get_current_user)
+    product_use_cases: ProductUseCase = Depends(get_product_use_cases)
 ):
     """ Delete product from system """
     try:

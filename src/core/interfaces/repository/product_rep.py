@@ -1,5 +1,3 @@
-# src/infra/repository/product_rep.py
-
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -13,33 +11,43 @@ class ProductRep(ProductIRep):
     def __init__(self, session: Session):
         self.session = session
 
-    def create(self, product: Product) -> Product:
-        """ Create the ProductModel and commit on db """
-        try:
-            product_db = ProductModel(
-                name=product.name,
-                description=product.description,
-                price=product.price,
-                quantity=product.qnt, 
-                category=product.category
-            )
-
-            self.session.add(product_db)
-            self.session.commit()
-            self.session.refresh(product_db)
-
-            return Product(
+    def _db_to_entity(self, product_db: ProductModel) -> Product:
+        """Converts DB model into Entity"""
+        if not product_db:
+            return None
+        return Product(
                 id=product_db.id,
+                store_id=product_db.store_id,
                 name=product_db.name,
                 description=product_db.description,
                 price=float(product_db.price),
                 qnt=product_db.quantity,
                 category=product_db.category
             )
+
+
+    def create(self, product: Product) -> Product:
+        """ Create the ProductModel and commit on db """
+        try:
+            product_db = ProductModel(
+                name=product.name,
+                store_id=product.store_id,
+                description=product.description,
+                price=product.price,
+                quantity=product.qnt, 
+                category=product.category
+            )
+            self.session.add(product_db)
+            self.session.commit()
+            self.session.refresh(product_db)
+            
+            return self._db_to_entity(product_db)
+        
         except IntegrityError:
             self.session.rollback()
             raise ProductNameAlreadyExistsError(name=product.name)
         except Exception as e:
+            print(e)
             self.session.rollback()
             raise e
 
@@ -51,14 +59,7 @@ class ProductRep(ProductIRep):
         if not product_db:
             return None
         
-        return Product(
-            id=product_db.id,
-            name=product_db.name,
-            description=product_db.description,
-            price=float(product_db.price),
-            qnt=product_db.quantity,
-            category=product_db.category
-        )
+        return self._db_to_entity(product_db)
 
     def get_by_name(self, name: str) -> Optional[Product]:
         """ Return the product by name """
@@ -68,14 +69,7 @@ class ProductRep(ProductIRep):
         if not product_db:
             return None
         
-        return Product(
-            id=product_db.id,
-            name=product_db.name,
-            description=product_db.description,
-            price=float(product_db.price),
-            qnt=product_db.quantity,
-            category=product_db.category
-        )
+        return self._db_to_entity(product_db)
 
     def get_all(self) -> List[Product]:
         """ Returns all products """
@@ -83,14 +77,8 @@ class ProductRep(ProductIRep):
         products_db = self.session.query(ProductModel).all()
         
         return [
-            Product(
-                id=p.id,
-                name=p.name,
-                description=p.description,
-                price=float(p.price),
-                qnt=p.quantity,
-                category=p.category
-            ) for p in products_db
+            self._db_to_entity(p)
+            for p in products_db
         ]
 
     def update(self, product_id: int, product_data: Dict[str, Any]) -> Product:
@@ -118,14 +106,8 @@ class ProductRep(ProductIRep):
             self.session.commit()
             self.session.refresh(product_db)
             
-            return Product(
-                id=product_db.id,
-                name=product_db.name,
-                description=product_db.description,
-                price=float(product_db.price),
-                qnt=product_db.quantity,
-                category=product_db.category
-            )
+            return self._db_to_entity(product_db)
+        
         except IntegrityError:
             self.session.rollback()
             raise ProductNameAlreadyExistsError(name=update_data["name"])

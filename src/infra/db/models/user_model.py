@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLAlchemyEnum
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
 from ....core.entities.user_role import UserRole
-
+from .store_model import user_store_association
 
 class UserModel(Base):
     __tablename__ = "users"
@@ -23,6 +24,12 @@ class UserModel(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    stores = relationship(
+        "StoreModel", 
+        secondary=user_store_association, 
+        back_populates="users"
+    )
 
     def __repr__(self):
         return f"<UserModel(id={self.id}, name='{self.name}', role='{self.role.value}')>"

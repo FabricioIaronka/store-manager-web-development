@@ -10,7 +10,7 @@ from ...core.errors.product_error import ProductNotFoundError
 from ...core.errors.user_error import UserNotFoundError
 from ...core.errors.client_error import ClientNotFoundError
 from ...core.entities.user import User
-from ...api.dependencies.auth_dependencies import get_current_user
+from ...api.dependencies.auth_dependencies import get_current_user, get_active_store_id
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
@@ -18,12 +18,13 @@ router = APIRouter(prefix="/sales", tags=["Sales"])
 def create_sale(
     sale_data: SaleCreate,
     sale_use_cases: SaleUseCase = Depends(get_sale_use_cases),
-    current_user: User = Depends(get_current_user)
+    store_id: int = Depends(get_active_store_id)
 ):
     try:
         items_list_dict = [item.model_dump() for item in sale_data.items]
         
         new_sale = sale_use_cases.create_sale(
+            store_id=store_id,
             user_id=sale_data.user_id,
             payment_type=sale_data.payment_type,
             client_id=sale_data.client_id,
@@ -47,8 +48,7 @@ def create_sale(
 
 @router.get("/", response_model=List[SaleResponse])
 def get_all_sales(
-    sale_use_cases: SaleUseCase = Depends(get_sale_use_cases),
-    current_user: User = Depends(get_current_user)
+    sale_use_cases: SaleUseCase = Depends(get_sale_use_cases)
 ):
     try:
         sales = sale_use_cases.get_all_sales()
@@ -60,8 +60,7 @@ def get_all_sales(
 @router.get("/{sale_id}", response_model=SaleResponse)
 def get_sale_by_id(
     sale_id: int,
-    sale_use_cases: SaleUseCase = Depends(get_sale_use_cases),
-    current_user: User = Depends(get_current_user)
+    sale_use_cases: SaleUseCase = Depends(get_sale_use_cases)
 ):
     try:
         sale = sale_use_cases.get_sale_by_id(sale_id)

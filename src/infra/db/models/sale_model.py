@@ -9,6 +9,7 @@ class SaleModel(Base):
     __tablename__ = "sales"
 
     id = Column(Integer, primary_key=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
 
@@ -26,6 +27,7 @@ class SaleModel(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     items = relationship("SaleItemModel", back_populates="sale", cascade="all, delete-orphan")
+    store = relationship("StoreModel", back_populates="sales")
 
     def __repr__(self):
         return f"<SaleModel(id={self.id}, total_value={self.total_value})>"
