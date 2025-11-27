@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 load_dotenv()
@@ -27,6 +27,16 @@ Base = declarative_base()
 def get_db_session():
     db = SessionLocal()
     try:
+        db.execute(text("RESET app.current_user_id"))
         yield db
     finally:
+        db.close()
+
+def get_tenant_session(user_id: int):
+    db = SessionLocal()
+    try:
+        db.execute(text(f"SET app.current_user_id = '{user_id}'"))
+        yield db
+    finally:
+        db.execute(text("RESET app.current_user_id"))
         db.close()
