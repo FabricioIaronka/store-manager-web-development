@@ -17,7 +17,7 @@ def login_for_access_token(
     Verify email and psswd. Returns JWT token
     """
     user_rep = UserRep(db)
-    user = user_rep.get_by_email(form_data.username) 
+    user = user_rep.get_user_for_auth(form_data.username) 
 
     if not user or not verify_password(form_data.password, user.password_hash): 
         raise HTTPException(
