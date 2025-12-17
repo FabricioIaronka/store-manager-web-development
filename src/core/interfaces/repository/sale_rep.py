@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 
@@ -18,7 +19,6 @@ class SaleRep(SaleIRep):
         self.session = session
 
     def _db_to_entity(self, sale_db: SaleModel) -> Optional[Sale]:
-        print("entity")
         if not sale_db:
             return None
         

@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import create_engine, text, event
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 load_dotenv()
 
@@ -24,6 +24,18 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+def set_rls_on_session_begin(session, transaction, connection):
+    """
+    Event trigger to sustain the session after the commit
+    """
+    user_id = session.info.get("user_id")
+    
+    if user_id:
+        connection.execute(text(f"SET LOCAL app.current_user_id = '{user_id}'"))
+
+
+event.listen(Session, "after_begin", set_rls_on_session_begin)
+
 def get_db_session():
     db = SessionLocal()
     try:
@@ -35,8 +47,9 @@ def get_db_session():
 def get_tenant_session(user_id: int):
     db = SessionLocal()
     try:
-        db.execute(text(f"SET app.current_user_id = '{user_id}'"))
+        db.info["user_id"] = user_id
+        
         yield db
     finally:
-        db.execute(text("RESET app.current_user_id"))
+        # Boa prática: limpar ao fechar
         db.close()

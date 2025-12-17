@@ -1,7 +1,9 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+
 from ...core.entities.user_role import UserRole
+from ..schemas.store_schema import StoreResponse
 
 
 class UserBase(BaseModel):
@@ -19,6 +21,8 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    role: UserRole
+    stores: List[StoreResponse]
     created_at: datetime
     updated_at: datetime
 
