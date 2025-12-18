@@ -41,7 +41,7 @@ def login_for_access_token(
         httponly=True,
         max_age=cookie_expire_seconds,  
         expires=cookie_expire_seconds,
-        samesite="lax",   
+        samesite="none",   
         secure=True     
     )
     
