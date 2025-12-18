@@ -153,19 +153,3 @@ CREATE POLICY tenant_isolation_policy ON products
 CREATE POLICY tenant_isolation_policy ON sales
     USING (store_id IN (SELECT store_id FROM user_stores WHERE user_id = NULLIF(current_setting('app.current_user_id', true), '')::INTEGER))
     WITH CHECK (store_id IN (SELECT store_id FROM user_stores WHERE user_id = NULLIF(current_setting('app.current_user_id', true), '')::INTEGER));
-
-CREATE POLICY stores_isolation_policy ON stores
-    USING (
-        owner_id = NULLIF(current_setting('app.current_user_id', true), '')::INTEGER
-        OR
-        id IN (
-            SELECT store_id FROM user_stores 
-            WHERE user_id = NULLIF(current_setting('app.current_user_id', true), '')::INTEGER
-        )
-    )
-    WITH CHECK (
-        owner_id = NULLIF(current_setting('app.current_user_id', true), '')::INTEGER
-    );
-
-CREATE POLICY user_stores_isolation_policy ON user_stores USING ( user_id = current_setting('app.current_user_id', true)::INTEGER)
-    WITH CHECK (user_id = current_setting('app.current_user_id', true)::INTEGER);

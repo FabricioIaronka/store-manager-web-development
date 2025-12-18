@@ -38,12 +38,45 @@ Um sistema digital simples e acessível pode reduzir erros, melhorar a gestão d
 ---
 
 ## 6) Fluxo principal do usuário e primeira fatia vertical
-**Fluxo principal do usuário**:  
-1. Usuário acessa o sistema e faz login (quando houver autenticação).  
-2. Cadastra produtos no estoque.  
-3. Registra uma venda.  
-4. O estoque é atualizado automaticamente.  
-5. Usuário gera um relatório simples das vendas.  
+### **1\. Fluxo Curto: Rotina de Venda (Vendedor)**
+
+Este fluxo representa o "Caminho Feliz" do dia a dia: o vendedor chega, loga e realiza uma venda rápida.
+
+**Passo a Passo:**
+
+1. **Login:** O vendedor acessa a tela de login e insere credenciais.  
+2. **Contexto:** O sistema retorna os dados do usuário e as lojas permitidas (`/auth/me`). O vendedor seleciona a loja ativa (caso tenha mais de uma).  
+3. **Venda:** O vendedor seleciona os produtos e finaliza a venda.  
+4. **Processamento:** O sistema valida o estoque, registra a venda e baixa o estoque numa única transação.
+
+![FluxoCurto](./docs/diagrams/FluxoCurto.png) 
+
+### **2\. Fluxo Longo: Configuração e Ciclo Completo (Admin/Gerente)**
+
+Este fluxo cobre desde a criação da infraestrutura (Loja/Produto) até a realização da venda. É ideal para testar a integração de todos os CRUDs.
+
+**Passo a Passo:**
+
+#### **1\. Acesso e Contexto**
+
+1. **Login:** O vendedor insere email/senha. A API autentica e grava um **Cookie HttpOnly** seguro no navegador.  
+2. **Carregamento:** O sistema identifica o usuário e lista as lojas permitidas.  
+3. **Seleção de Loja:** O vendedor escolhe a loja de trabalho (ex: "Matriz"). O sistema passa a enviar o cabeçalho x-store-id automaticamente.
+
+#### **2\. Carrinho e Validação**
+
+4. **Consulta de Produto:** Ao adicionar um item, o sistema consulta o banco para validar se o preço está correto e se há estoque disponível na loja selecionada.  
+5. **Envio da Venda:** O vendedor confirma o pagamento e fecha o pedido.
+
+#### **3\. Processamento Atômico**
+
+6. **Transação Segura:** O banco de dados realiza três ações em conjunto:  
+   * Cria o registro da venda.  
+   * Registra os itens vendidos.  
+   * **Deduz a quantidade do estoque** imediatamente.  
+7. **Conclusão:** Se tudo der certo, a venda é confirmada e o recibo é exibido. Caso contrário, nada é alterado (Rollback).
+
+![FluxoLongo](./docs/diagrams/FluxoLongo.png)
 
 **Primeira fatia vertical (MVP)**:  
 - Cadastro de produtos  
@@ -68,7 +101,6 @@ Os wireframes estão disponíveis na pasta [`/docs/wireframes`](./docs/wireframe
 ![Tela de Vendas](./docs/wireframes/tela_venda.png)  
 ![Tela de Estoque](./docs/wireframes/tela_estoque.png)
 ## 8) Tecnologias
-<!-- Liste apenas o que você REALMENTE pretende usar agora. -->
 
 ### 8.1 Navegador
 **Navegador:** React + Vite (HTML/CSS/JS)  
@@ -77,76 +109,105 @@ Os wireframes estão disponíveis na pasta [`/docs/wireframes`](./docs/wireframe
 
 ### 8.2 Front-end (servidor de aplicação, se existir)
 **Front-end (servidor):** React (SPA)  
-**Hospedagem:** Vercel (possível)  
+**Hospedagem:** GitHub Pages  
 
 ### 8.3 Back-end (API/servidor, se existir)
 **Back-end (API):** FastAPI (Python)  
-**Banco de dados:** SQLite (inicial, evolutivo para PostgreSQL)  
-**Deploy do back-end:** Railway (possível)  
+**Banco de dados:** PostgreSQL
+**Deploy do back-end:** Render 
 
 ---
 
 ## 9) Plano de Dados (Dia 0) — somente itens 1–3
-<!-- Defina só o essencial para criar o banco depois. -->
 
-### 9.1 Entidades
-- **Usuario** — pessoa que acessa o sistema (vendedor, gerente).  
-- **Produto** — item disponível no estoque da loja.  
-- **Venda** — registro de uma venda realizada, vinculada a produtos e usuários.  
+### **9.1 Entidades**
+
+* **Usuario (users)** — Acesso ao sistema (Vendedor, Gerente de Estoque, Admin).  
+* **Loja (stores)** — Entidade que agrupa os dados. O sistema é multi-loja.  
+* **Usuario\_Loja (user\_stores)** — Tabela associativa que define permissões de acesso (quem trabalha em qual loja).  
+* **Cliente (clients)** — Consumidor final cadastrado por loja.  
+* **Produto (products)** — Item de estoque, isolado por loja.  
+* **Venda (sales)** — Registro da transação financeira.  
+* **ItemVenda (sale\_items)** — Detalhes dos produtos em uma venda.  
 
 ---
 
-### 9.2 Campos por entidade
+### **9.2 Campos por entidade**
 
-#### Usuario
-| Campo            | Tipo       | Obrigatório | Exemplo             |
-|------------------|------------|-------------|---------------------|
-| id               | número     | sim         | 1                   |
-| nome             | texto      | sim         | "Ana Souza"         |
-| email            | texto      | sim (único) | "ana@exemplo.com"   |
-| senha_hash       | texto      | sim         | "$2a$10$..."        |
-| papel            | número (0=vendedor, 1=gerente) | sim | 0 |
-| dataCriacao      | data/hora  | sim         | 2025-08-20 14:30    |
-| dataAtualizacao  | data/hora  | sim         | 2025-08-20 15:10    |
+#### **Usuario (users)**
 
-#### Produto
-| Campo            | Tipo       | Obrigatório | Exemplo             |
-|------------------|------------|-------------|---------------------|
-| id               | número     | sim         | 101                 |
-| nome             | texto      | sim         | "Camiseta Preta"    |
-| preco            | número     | sim         | 49.90               |
-| quantidade       | número     | sim         | 20                  |
-| categoria        | texto      | não         | "Roupas"            |
-| dataCriacao      | data/hora  | sim         | 2025-08-20 10:10    |
-| dataAtualizacao  | data/hora  | sim         | 2025-08-20 12:30    |
+| Campo | Tipo | Obrigatório | Detalhes |
+| :---- | :---- | :---- | :---- |
+| id | Serial (PK) | Sim | Identificador único. |
+| name | Varchar(255) | Sim | Nome completo. |
+| email | Varchar(255) | Sim | Único globalmente. Usado para login. |
+| password\_hash | Varchar(255) | Sim | Hash seguro (bcrypt). |
+| role | Enum | Sim | Valores: 'seller', 'stock\_manager', 'admin'. |
+| created\_at | Timestamp | Sim | Automático. |
 
-#### Venda
-| Campo            | Tipo       | Obrigatório | Exemplo             |
-|------------------|------------|-------------|---------------------|
-| id               | número     | sim         | 5001                |
-| usuario_id       | número (fk)| sim         | 1                   |
-| data             | data/hora  | sim         | 2025-08-20 14:40    |
-| valor_total      | número     | sim         | 149.70              |
+#### **Loja (stores)**
 
-#### VendaProduto (tabela associativa para N:N)
-| Campo            | Tipo       | Obrigatório | Exemplo             |
-|------------------|------------|-------------|---------------------|
-| id               | número     | sim         | 7001                |
-| venda_id         | número (fk)| sim         | 5001                |
-| produto_id       | número (fk)| sim         | 101                 |
-| quantidade       | número     | sim         | 3                   |
-| preco_unitario   | número     | sim         | 49.90               |
+| Campo | Tipo | Obrigatório | Detalhes |
+| :---- | :---- | :---- | :---- |
+| id | Serial (PK) | Sim | Identificador da loja. |
+| name | Varchar(255) | Sim | Nome fantasia. |
+| cnpj | Varchar(18) | Não | Documento legal. |
+| owner\_id | Integer (FK) | Não | Usuário criador/dono (referencia users.id). |
+
+#### **Cliente (clients)**
+
+*Nota: CPF e E-mail são únicos apenas dentro da mesma loja (Unique Composite)* 
+| Campo | Tipo | Obrigatório | Detalhes | 
+| :--- | :--- | :--- | :--- |
+ | id | Serial (PK) | Sim | Identificador. | 
+ | store\_id | Integer (FK) | **Sim** | Vínculo com a loja (RLS). | 
+ | name | Varchar(100) | Sim | Nome do cliente. |
+  | cpf | Varchar(11) | Não | Cadastro de pessoa física. | 
+  | email | Varchar(255) | Não | Contato. |
+
+#### **Produto (products)**
+
+*Nota: Estoque é isolado por loja.* 
+
+| Campo | Tipo | Obrigatório | Detalhes |
+| :--- | :--- | :--- | :--- | 
+| id | Serial (PK) | Sim | Identificador. | 
+| store\_id | Integer (FK) | **Sim** | Vínculo com a loja (RLS). | 
+| name | Varchar(100) | Sim | Nome do produto. | 
+| price | Decimal(10,2) | Sim | Preço de venda atual. | 
+| quantity | Integer | Sim | Saldo de estoque. | 
+| category | Varchar(50) | Não | Categoria para filtros. |
+
+#### **Venda (sales)**
+
+| Campo | Tipo | Obrigatório | Detalhes |
+| :---- | :---- | :---- | :---- |
+| id | Serial (PK) | Sim | Número da venda. |
+| store\_id | Integer (FK) | **Sim** | Loja onde ocorreu a venda. |
+| user\_id | Integer (FK) | Sim | Vendedor responsável. |
+| client\_id | Integer (FK) | Não | Cliente (opcional). |
+| payment\_type | Enum | Sim | 'Money', 'Debit', 'Credit', 'PIX'. |
+| total\_value | Decimal(10,2) | Sim | Valor final calculado. |
+
+#### **ItemVenda (sale\_items)**
+
+| Campo | Tipo | Obrigatório | Detalhes |
+| :---- | :---- | :---- | :---- |
+| id | Serial (PK) | Sim | Identificador do item. |
+| sale\_id | Integer (FK) | Sim | Vínculo com a venda. |
+| product\_id | Integer (FK) | Sim | Produto vendido. |
+| quantity | Integer | Sim | Quantidade vendida. |
+| unit\_price | Decimal(10,2) | Sim | Preço *no momento da venda* (Snapshot). |
 
 ---
 
 ### 9.3 Relações entre entidades
 
-* Um **Usuario** pode realizar muitas **Vendas** (1→N).  
-* Uma **Venda** pertence a um **Usuario** (N→1).  
-* Uma **Venda** pode ser associada a um **Cliente** (1→1, opcional).  
-* Uma **Venda** pode ter muitos **Produtos** (N→N).  
-* Um **Produto** pode aparecer em muitas **Vendas** (N→N).  
-* A relação **ItemVenda** resolve o N→N entre **Venda** e **Produto**.
+1. **Usuário \<-\> Loja (N:N):** Um usuário pode trabalhar em várias lojas, e uma loja tem vários funcionários. Resolvido pela tabela user\_stores.  
+2. **Loja \-\> Dados (1:N):** Produtos, Clientes e Vendas pertencem a **uma** loja específica (store\_id). Isso permite o isolamento dos dados via RLS.  
+3. **Venda \-\> Itens (1:N):** Uma venda possui vários itens. Se a venda for apagada, os itens são apagados (Cascade).  
+4. **Produto \<-\> Venda (N:N):** Resolvido pela tabela sale\_items.  
+5. **Venda \-\> Cliente (N:1):** Uma venda pode estar associada a um único cliente.
 
 ### 9.4 Modelagem (SQL)
 
@@ -214,127 +275,126 @@ CREATE TABLE sale\_items (
 
 * **DML QUERY**
 ```sql
-    -- Inserir Usurios
+-- --- LIMPEZA DE DADOS (Opcional, para evitar duplicados) ---
+TRUNCATE TABLE sale_items, sales, products, clients, user_stores, stores, users RESTART IDENTITY CASCADE;
+
+-- 1. INSERIR UTILIZADORES
+-- Senha para ambos é 'secret': $2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW
 INSERT INTO users (name, email, password_hash, role) VALUES
-('Alice Gerente', 'alice@email.com', '$2y$10$senhahashgerente', 'gerente'),
-('Bruno Vendedor', 'bruno@email.com', '$2y$10$senhahashvaluevendedor', 'vendedor');
+('Alice Proprietária', 'alice@email.com', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'admin'),
+('Bruno Vendedor', 'bruno@email.com', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'seller');
 
--- Inserir Clientes
-INSERT INTO clients (name, surname, cpf, number, email) VALUES
-('Carlos Silva', 'de Souza', '11122233344', '49999887766', 'carlos.silva@email.com'),
-('Diana Costa', 'Pereira', '55566677788', '48888776655', 'diana.costa@email.com'),
-('Eduardo Lima', NULL, NULL, '47777665544', NULL);
+-- 2. INSERIR LOJAS
+-- Alice (ID 1) é a dona de ambas as lojas
+INSERT INTO stores (name, cnpj, owner_id) VALUES
+('Loja Matriz - Eletrônicos', '12.345.678/0001-99', 1),
+('Filial Centro - Roupas', '98.765.432/0001-11', 1);
 
--- Inserir Produtos
-INSERT INTO products (name, description, price, quantity, category) VALUES
-('Camiseta Branca', 'Camiseta de algodão Pima, cor branca', 49.90, 50, 'Vestuário'),
-('Calça Jeans Slim', 'Calça jeans masculina com elastano', 119.90, 30, 'Vestuário'),
-('Tênis de Corrida', 'Tênis leve para corrida, marca XPTO', 299.50, 15, 'Calçados'),
-('Boné Preto', 'Boné básico com aba curva', 25.00, 40, 'Acessórios'),
-('Copo Térmico', 'Copo de inox com capacidade para 500ml', 89.90, 8, 'Utilitários');
+-- 3. VINCULAR UTILIZADORES ÀS LOJAS (Tabela Associativa)
+INSERT INTO user_stores (user_id, store_id) VALUES
+(1, 1), -- Alice trabalha na Loja 1
+(1, 2), -- Alice trabalha na Loja 2
+(2, 1); -- Bruno trabalha APENAS na Loja 1
 
--- Inserir Venda 1 (feita por Bruno Vendedor para o cliente Carlos Silva)
-INSERT INTO sales (user_id, client_id, payment_type, total_value) VALUES
-(2, 1, 'Credit', 169.90);
+-- 4. INSERIR CLIENTES (Segregados por Loja)
+INSERT INTO clients (store_id, name, surname, cpf, number, email) VALUES
+-- Clientes da Loja 1 (Eletrônicos)
+(1, 'Carlos Silva', 'Almeida', '11122233344', '11999990000', 'carlos@loja1.com'),
+(1, 'Diana Prince', 'Amazonas', '22233344455', '11988887777', 'diana@loja1.com'),
+-- Clientes da Loja 2 (Roupas) - Note que o CPF pode até repetir se fosse outra pessoa em outra loja
+(2, 'Eduardo Stark', 'Winterfell', '33344455566', '21999991111', 'eduardo@loja2.com');
+
+-- 5. INSERIR PRODUTOS (Estoque isolado por loja)
+INSERT INTO products (store_id, name, description, price, quantity, category) VALUES
+-- Loja 1: Eletrônicos
+(1, 'Notebook Gamer', 'i7, 16GB RAM, RTX 3060', 4500.00, 10, 'Computadores'),
+(1, 'Mouse Sem Fio', 'Mouse ergonômico 2.4Ghz', 150.00, 50, 'Periféricos'),
+(1, 'Teclado Mecânico', 'Switch Blue RGB', 300.00, 20, 'Periféricos'),
+-- Loja 2: Roupas
+(2, 'Camiseta Básica', 'Algodão Pima', 49.90, 100, 'Vestuário'),
+(2, 'Calça Jeans', 'Slim Fit Azul', 120.00, 40, 'Vestuário');
+
+-- 6. INSERIR VENDAS
+-- Venda 1: Feita na Loja 1, pelo Bruno (User 2), para o Carlos (Client 1)
+INSERT INTO sales (store_id, user_id, client_id, payment_type, total_value) VALUES
+(1, 2, 1, 'Credit', 4650.00);
+
 -- Itens da Venda 1
 INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES
-(1, 2, 1, 119.90), -- 1 Calça Jeans
-(1, 4, 2, 25.00);  -- 2 Bonés Pretos
+(1, 1, 1, 4500.00), -- 1 Notebook
+(1, 2, 1, 150.00);  -- 1 Mouse
 
--- Inserir Venda 2 (feita por Bruno Vendedor para o cliente Diana Costa)
-INSERT INTO sales (user_id, client_id, payment_type, total_value) VALUES
-(2, 2, 'PIX', 299.50);
+-- Venda 2: Feita na Loja 2, pela Alice (User 1), para o Eduardo (Client 3)
+INSERT INTO sales (store_id, user_id, client_id, payment_type, total_value) VALUES
+(2, 1, 3, 'PIX', 99.80);
+
 -- Itens da Venda 2
 INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES
-(2, 3, 1, 299.50); -- 1 Tênis de Corrida
-
--- Inserir Venda 3 (feita por Alice Gerente, sem cliente identificado)
-INSERT INTO sales (user_id, client_id, payment_type, total_value) VALUES
-(1, NULL, 'Debit', 239.60);
--- Itens da Venda 3
-INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES
-(3, 1, 3, 49.90), -- 3 Camisetas Brancas
-(3, 5, 1, 89.90); -- 1 Copo Térmico
+(2, 4, 2, 49.90); -- 2 Camisetas
 
 ```
 
 * **DQL QUERY**
 
 ```sql
--- Query 1: Listar todos os produtos com baixo estoque (quantidade menor que 10)
-SELECT
-    id,
-    name,
-    quantity,
-    category
-FROM
-    products
-WHERE
-    quantity < 10
-ORDER BY
-    quantity ASC;
+-- Query 1: Listar produtos com baixo estoque APENAS da Loja 1 (Matriz)
+SELECT 
+    id, name, quantity, price 
+FROM 
+    products 
+WHERE 
+    store_id = 1 
+    AND quantity < 15;
 
--- Query 2: Calcular o total de vendas agrupado por dia
-SELECT
-    DATE(created_at) AS dia,
-    SUM(total_value) AS faturamento_total,
-    COUNT(id) AS numero_de_vendas
-FROM
-    sales
-GROUP BY
-    DATE(created_at)
-ORDER BY
-    dia DESC;
+-- Query 2: Relatório de Vendas consolidadas POR LOJA
+-- Útil para o Admin ver qual loja está faturando mais
+SELECT 
+    st.name AS nome_loja,
+    COUNT(s.id) AS qtd_vendas,
+    SUM(s.total_value) AS faturamento_total
+FROM 
+    sales s
+JOIN 
+    stores st ON s.store_id = st.id
+GROUP BY 
+    st.name
+ORDER BY 
+    faturamento_total DESC;
 
+-- Query 3: Ver quais usuários têm acesso a quais lojas
+-- (Isso ajuda a debugar problemas de permissão)
+SELECT 
+    u.name AS usuario,
+    u.role AS cargo,
+    s.name AS loja_permitida
+FROM 
+    users u
+JOIN 
+    user_stores us ON u.id = us.user_id
+JOIN 
+    stores s ON us.store_id = s.id
+ORDER BY 
+    u.name;
 
--- Query 3: Listar os 5 produtos mais vendidos (em quantidade)
-SELECT
-    p.id,
-    p.name,
-    SUM(si.quantity) AS total_vendido
-FROM
-    sale_items si
-JOIN
-    products p ON si.product_id = p.id
-GROUP BY
-    p.id, p.name
-ORDER BY
-    total_vendido DESC
-LIMIT 5;
-
-
--- Query 4: Detalhar uma venda específica (ex: venda com id = 1)
-SELECT
-    s.id AS venda_id,
-    s.created_at AS data_venda,
+-- Query 4: Detalhes de uma venda (Nota Fiscal simples)
+-- Mostra: Loja, Vendedor, Cliente, Produtos e Total
+SELECT 
+    st.name AS loja,
+    u.name AS vendedor,
+    c.name AS cliente,
     p.name AS produto,
-    si.quantity AS quantidade,
-    si.unit_price AS preco_unitario,
+    si.quantity AS qtd,
+    si.unit_price AS preco_unit,
     (si.quantity * si.unit_price) AS subtotal
-FROM
-    sales s
-JOIN
-    sale_items si ON s.id = si.sale_id
-JOIN
-    products p ON si.product_id = p.id
-WHERE
-    s.id = 1;
-
-
--- Query 5: Listar todas as vendas realizadas por um vendedor específico (ex: user com id = 2)
-SELECT
-    s.id AS venda_id,
-    s.total_value AS valor_total,
-    s.created_at AS data_venda,
-    c.name AS nome_cliente
-FROM
-    sales s
-LEFT JOIN
-    clients c ON s.client_id = c.id
-WHERE
-    s.user_id = 2
-ORDER BY
-    s.created_at DESC;
+FROM 
+    sale_items si
+JOIN sales s ON si.sale_id = s.id
+JOIN products p ON si.product_id = p.id
+JOIN stores st ON s.store_id = st.id
+JOIN users u ON s.user_id = u.id
+LEFT JOIN clients c ON s.client_id = c.id
+WHERE 
+    s.id = 1; -- Filtra pela Venda ID 1
 
 ```
 
@@ -342,16 +402,71 @@ ORDER BY
 
 ### **Tabela de Endpoints**
 
-#### **Users**
+#### **Autenticação (Auth)**
 
-| Método | Rota | Corpo (JSON) | Resposta de Sucesso |
-| :---- | :---- | :---- | :---- |
-| POST | /users/ | { "name": "string", "email": "user@example.com", "password": "a\_strong\_password", "role": "seller" } | 201 Created \- Objeto do utilizador criado |
-| GET | /users/ | N/A | 200 OK \- Lista de todos os utilizadores |
-| GET | /users/{id} | N/A | 200 OK \- Objeto do utilizador encontrado |
-| GET | /users/email/{email} | N/A | 200 OK \- Objeto do utilizador encontrado |
-| PUT | /users/{id} | { "name": "new name", "role": "admin" } (campos opcionais) | 200 OK \- Objeto do utilizador atualizado |
-| DELETE | /users/{id} | N/A | 204 No Content |
+| Método | Rota | Descrição |
+| :---- | :---- | :---- |
+| POST | /auth/login | Realiza login e define cookie seguro (HttpOnly). |
+| POST | /auth/logout | Realiza logout (remove cookie). |
+| GET | /auth/me | Retorna dados do utilizador logado e as suas lojas. |
+
+#### **Utilizadores (Users)**
+
+| Método | Rota | Descrição |
+| :---- | :---- | :---- |
+| POST | /users/ | Cria um novo utilizador. |
+| GET | /users/ | Lista todos os utilizadores (conforme RLS). |
+| GET | /users/{user\_id} | Obtém detalhes de um utilizador específico. |
+| GET | /users/email/{user\_email} | Obtém utilizador por e-mail. |
+| PUT | /users/{user\_id} | Atualiza dados de um utilizador. |
+| DELETE | /users/{user\_id} | Remove um utilizador. |
+
+#### **Lojas (Stores)**
+
+| Método | Rota | Descrição |
+| :---- | :---- | :---- |
+| POST | /stores/ | Cria uma nova loja (vínculo automático com criador). |
+| GET | /stores/ | Lista lojas permitidas ao utilizador. |
+| GET | /stores/{store\_id} | Obtém detalhes de uma loja. |
+| GET | /stores/cnpj/{cnpj} | Obtém loja por CNPJ. |
+| PUT | /stores/{store\_id} | Atualiza dados de uma loja. |
+| DELETE | /stores/{store\_id} | Remove uma loja. |
+
+#### **Clientes (Clients)**
+
+*Requer Header x-store-id ou seleção de loja.*
+
+| Método | Rota | Descrição |
+| :---- | :---- | :---- |
+| POST | /clients/ | Cadastra cliente na loja ativa. |
+| GET | /clients/ | Lista clientes da loja ativa. |
+| GET | /clients/{client\_id} | Obtém cliente por ID. |
+| GET | /clients/email/{email} | Obtém cliente por e-mail (dentro da loja). |
+| GET | /clients/cpf/{cpf} | Obtém cliente por CPF (dentro da loja). |
+| PUT | /clients/{client\_id} | Atualiza cliente. |
+| DELETE | /clients/{client\_id} | Remove cliente. |
+
+#### **Produtos (Products)**
+
+*Requer Header x-store-id ou seleção de loja.*
+
+| Método | Rota | Descrição |
+| :---- | :---- | :---- |
+| POST | /products/ | Cadastra novo produto na loja. |
+| GET | /products/ | Lista todos os produtos da loja. |
+| GET | /products/{product\_id} | Obtém detalhes de um produto. |
+| PUT | /products/{product\_id} | Atualiza produto (preço, stock, etc). |
+| DELETE | /products/{product\_id} | Remove produto. |
+
+#### **Vendas (Sales)**
+
+*Requer Header x-store-id ou seleção de loja.*
+
+| Método | Rota | Descrição |
+| :---- | :---- | :---- |
+| POST | /sales/ | Realiza venda (baixa stock atomicamente). |
+| GET | /sales/ | Lista histórico de vendas da loja. |
+| GET | /sales/{sale\_id} | Obtém detalhes de uma venda. |
 
 #### 
 
@@ -359,29 +474,37 @@ ORDER BY
 
 ## **10\. Tecnologias Necessárias**
 
-* **Python 3.12.3** com **FastAPI**  
-* **PostgreSQL 16**
+* **Python 3.12+**  
+* **FastAPI** (Framework Web)  
+* **PostgreSQL** (Banco de dados com suporte a Row Level Security)  
+* **SQLAlchemy** (ORM)  
+* **Pydantic** (Validação de dados)
 
 ## **11\. Como Rodar**
 
 ### **Passo a Passo**
 
-1. Instalar Dependências:  
+1. Configurar Ambiente e Dependências:  
    Certifique-se de que tem um ambiente virtual (.venv) ativado e, de seguida, instale as dependências a partir da raiz do projeto.  
+   python \-m venv .venv  
+   \# Windows: .venv\\Scripts\\activate  
+   \# Linux/Mac: source .venv/bin/activate  
    pip install \-r requirements.txt
 
 2. Configurar Variáveis de Ambiente:  
-   Copie o ficheiro .env.example para um novo ficheiro chamado .env e preencha com as suas credenciais do banco de dados.  
+   Copie o ficheiro .env.example para um novo ficheiro chamado .env.  
    cp .env.example .env
 
-3. Criar e Popular o Banco de Dados:  
-   Certifique-se de que o seu serviço PostgreSQL está a rodar. De seguida, execute os scripts para criar a estrutura (tabelas, tipos, etc.) e popular com dados iniciais.  
-   \# Exemplo de comando \- substitua com o seu utilizador e nome do banco  
-   \# Executa o script para criar as tabelas  
-   psql \-h localhost \-U meu\_usuario\_api \-d vendas\_db \-f src/infra/db/scripts/init.sql
+   Preencha com as suas credenciais e chaves de segurança.**Atenção:** Gere uma SECRET\_KEY segura (ex: openssl rand \-hex 32).  
+3. Criar e Popular o Banco de Dados (PostgreSQL):  
+   O sistema utiliza Row Level Security (RLS). É crucial que o utilizador do banco de dados definido no .env NÃO seja um superutilizador (como postgres), caso contrário as políticas de segurança serão ignoradas.  
+   \# 1\. Crie um utilizador comum no seu banco (ex: app\_user) se ainda não existir.
 
-   \# (Opcional) Executa o script para popular com dados  
-   psql \-h localhost \-U meu\_usuario\_api \-d vendas\_db \-f src/infra/db/scripts/dml.sql
+   \# 2\. Execute o script de inicialização (Cria tabelas, Enums, Triggers e Policies)  
+   psql \-h localhost \-U app\_user \-d store\_manager\_db \-f src/infra/db/scripts/init.sql
+
+   \# 3\. (Opcional) Popule com dados de teste (Utilizadores, Lojas, Produtos)  
+   psql \-h localhost \-U app\_user \-d store\_manager\_db \-f src/infra/db/scripts/dml.sql
 
 ### **Comandos de Execução**
 
@@ -393,24 +516,45 @@ ORDER BY
 
 ### **Porta Padrão**
 
-* **8000**
+* **8000** (Acesse a documentação em: http://localhost:8000/docs)
 
 ## **12\. Variáveis de Ambiente**
 
-As seguintes variáveis de ambiente são necessárias para a conexão com o banco de dados. Elas devem ser definidas num ficheiro .env na raiz do projeto.
+As seguintes variáveis são obrigatórias para a conexão com o banco, segurança da aplicação e configuração de CORS. Devem ser definidas no ficheiro .env.
 
-* DB\_HOST: O endereço do servidor do banco de dados (ex: localhost).  
-* DB\_PORT: A porta do servidor do banco de dados (ex: 5432).  
-* DB\_USER: O nome de utilizador para a conexão.  
-* DB\_PASSWORD: A senha para o utilizador especificado.  
-* DB\_NAME: O nome do banco de dados ao qual se conectar.
+### **Banco de Dados**
 
-#### **.env.example**
+* DB\_HOST: Endereço do servidor (ex: localhost).  
+* DB\_PORT: Porta do PostgreSQL (ex: 5432).  
+* DB\_USER: Utilizador do banco (**Não usar root/postgres**).  
+* DB\_PASSWORD: Senha do utilizador.  
+* DB\_NAME: Nome do banco de dados (ex: store\_manager\_db).
 
+### **Segurança (JWT e Cookies)**
+
+* SECRET\_KEY: Chave hash longa e aleatória para assinar os tokens.  
+* ALGORITHM: Algoritmo de criptografia (recomendado: HS256).  
+* ACCESS\_TOKEN\_EXPIRE\_MINUTES: Tempo de validade do token/cookie em minutos (ex: 30).  
+* COOKIE\_SECURE: Define se o cookie exige HTTPS. Use False para desenvolvimento local e True em produção.
+
+### **CORS (Front-end)**
+
+* ALLOWED\_ORIGINS: Lista de domínios permitidos para acessar a API, separados por vírgula.
+
+#### **Exemplo de .env**
+
+\# Database  
 DB\_HOST=localhost  
 DB\_PORT=5432  
-DB\_USER=  
-DB\_PASSWORD=  
-DB\_NAME=
+DB\_USER=app\_user  
+DB\_PASSWORD=senha\_segura  
+DB\_NAME=store\_manager\_db
 
-#### 
+\# Security  
+SECRET\_KEY=sua\_chave\_secreta\_gerada\_aqui  
+ALGORITHM=HS256  
+ACCESS\_TOKEN\_EXPIRE\_MINUTES=30  
+COOKIE\_SECURE=False
+
+\# CORS  
+ALLOWED\_ORIGINS=http://localhost:5173,\[http://127.0.0.1:5173\]
