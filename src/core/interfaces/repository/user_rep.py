@@ -26,6 +26,7 @@ class UserRep(UserIRep):
                         id=store_model.id,
                         name=store_model.name,
                         cnpj=store_model.cnpj,
+                        owner_id=store_model.owner_id,
                         created_at=store_model.created_at
                     )
                 )

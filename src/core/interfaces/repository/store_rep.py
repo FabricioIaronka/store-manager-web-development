@@ -19,6 +19,7 @@ class StoreRep(StoreIRep):
             id=store_db.id,
             name=store_db.name,
             cnpj=store_db.cnpj,
+            owner_id=store_db.owner_id,
             created_at=store_db.created_at
         )
 
@@ -30,7 +31,8 @@ class StoreRep(StoreIRep):
 
             store_db = StoreModel(
                 name=store.name,
-                cnpj=store.cnpj
+                cnpj=store.cnpj,
+                owner_id=owner_id
             )
 
             store_db.users.append(owner_db)

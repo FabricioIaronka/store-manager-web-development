@@ -7,4 +7,5 @@ class Store:
     id: Optional[int]
     name: str
     cnpj: str
+    owner_id: Optional[int] = None
     created_at: Optional[datetime] = None
